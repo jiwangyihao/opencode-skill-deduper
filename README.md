@@ -47,6 +47,16 @@ npm run typecheck
 npm run build
 ```
 
+## Publishing
+
+This repository publishes to npm from GitHub Actions when a GitHub Release is published. The workflow uses npm Trusted Publishing (OIDC), so no local npm token or local 2FA prompt is required.
+
+```bash
+gh release create v0.1.0 --title "v0.1.0" --notes "Initial release"
+```
+
+The release workflow checks whether `opencode-skill-deduper@0.1.0` already exists on npm before running `npm publish --access public`.
+
 ## Logs
 
 When duplicate skill content is elided, the plugin writes a log line like this:
