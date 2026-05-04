@@ -1,0 +1,62 @@
+{
+  "name": "opencode-skill-deduper",
+  "version": "0.1.0",
+  "description": "OpenCode plugin that elides older duplicate skill content before model requests",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./dedupe": {
+      "types": "./dist/dedupe.d.ts",
+      "default": "./dist/dedupe.js"
+    }
+  },
+  "type": "module",
+  "license": "MPL-2.0",
+  "author": "jiwangyihao",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jiwangyihao/opencode-skill-deduper.git"
+  },
+  "homepage": "https://github.com/jiwangyihao/opencode-skill-deduper#readme",
+  "bugs": {
+    "url": "https://github.com/jiwangyihao/opencode-skill-deduper/issues"
+  },
+  "keywords": [
+    "opencode",
+    "plugin",
+    "skill",
+    "dedupe",
+    "context",
+    "tokens"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@opencode-ai/plugin": "1.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.0"
+  }
+}
