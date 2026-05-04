@@ -4,11 +4,11 @@
 [![npm downloads](https://img.shields.io/npm/dw/opencode-skill-deduper.svg)](https://www.npmjs.com/package/opencode-skill-deduper)
 [![License: MPL-2.0](https://img.shields.io/badge/License-MPL--2.0-brightgreen.svg)](LICENSE)
 
-> **Latest in v0.1.0 | v0.1.0 最近更新**
+> **Latest in v0.1.1 | v0.1.1 最近更新**
 >
-> - First public release for eliding repeated OpenCode skill content | 首个公开版本，用于压缩重复加载的 OpenCode skill 正文
-> - Keeps the newest full skill copy and replaces older copies with a compact marker | 保留最新完整副本，把旧副本替换成短占位文本
-> - Supports native OpenCode skill output, OmO / Oh My OpenCode skill output, and slash-injected skill blocks | 支持原生 OpenCode、OmO / Oh My OpenCode 以及 slash 注入的 skill 内容
+> - Keeps user-authored slash prompts and pasted transcripts intact | 保留用户编写的 slash prompt 和粘贴转录，不再整段误压缩
+> - Still elides older real OpenCode, OmO, and slash-injected skill blocks | 仍会压缩旧的真实 OpenCode、OmO 与 slash 注入 skill 块
+> - Adds regression coverage for pasted skill transcript false positives | 新增针对粘贴 skill 转录误判的回归测试
 
 [中文](#中文) | [English](#english)
 
@@ -53,7 +53,7 @@
 2. **执行其中带明确版本号的全局命令**。例如当前版本是：
 
    ```bash
-   opencode plugin opencode-skill-deduper@0.1.0 --force -g
+   opencode plugin opencode-skill-deduper@0.1.1 --force -g
    ```
 
 3. **如果你是刻意只想改当前项目目录下的 `.opencode`**，才使用不带 `-g` 的局部命令；否则默认不要省略 `-g`。
@@ -78,7 +78,7 @@
 2. 直接执行那条命令。默认应使用带 `-g/--global` 的全局命令来更新用户平时实际在用的 OpenCode 实例；如果用户明确只想改当前项目目录下的 `.opencode`，才省略 `-g`。例如当前版本：
 
    ```bash
-   opencode plugin opencode-skill-deduper@0.1.0 --force -g
+   opencode plugin opencode-skill-deduper@0.1.1 --force -g
    ```
 
 3. 不要手动编辑 OpenCode 配置来安装或升级这个插件，也不要使用裸包名或 `latest`。
@@ -131,7 +131,8 @@ Message 2: full using-superpowers skill content
 
 ## 注意事项
 
-- 插件只识别带有明确 skill 标记或 skill 路径的内容，不会压缩任意重复文本。
+- 插件只识别以明确 skill 标记或 skill 路径开头的内容，不会压缩任意重复文本。
+- 用户粘贴的对话转录或任务说明即使包含 slash command、`## Skill:` 等字样，也会按普通用户内容保留。
 - 插件只影响发往模型的请求，不改写 OpenCode 存储的 session 历史。
 - OpenCode 的 `experimental.chat.messages.transform` hook 仍是实验接口，后续 OpenCode 版本可能调整插件 API。
 
@@ -176,7 +177,7 @@ First read the latest GitHub Release for opencode-skill-deduper and execute the 
 2. **Run the exact versioned global command** from that section. For the current version, the command is:
 
    ```bash
-   opencode plugin opencode-skill-deduper@0.1.0 --force -g
+   opencode plugin opencode-skill-deduper@0.1.1 --force -g
    ```
 
 3. **Only omit `-g` if you intentionally want to update the current project's `.opencode` instead of the global OpenCode config.**
@@ -201,7 +202,7 @@ First read the latest GitHub Release for opencode-skill-deduper and execute the 
 2. Execute that command directly. By default, use the global command with `-g/--global`; only omit `-g` if you intentionally want to update the current project's `.opencode`. For the current version:
 
    ```bash
-   opencode plugin opencode-skill-deduper@0.1.0 --force -g
+   opencode plugin opencode-skill-deduper@0.1.1 --force -g
    ```
 
 3. Do not install or upgrade this plugin by hand-editing the OpenCode config, and do not use a bare package name or `latest`.
@@ -254,8 +255,9 @@ The newest copy remains intact, so the model still receives the current skill in
 
 ## Notes
 
-- The plugin only detects content with recognizable skill markers or skill directory paths.
+- The plugin only detects content that starts with recognizable skill markers or skill directory paths.
 - It does not deduplicate arbitrary repeated prose.
+- User-pasted transcripts or task prompts stay intact even when they mention slash commands, `## Skill:`, or similar skill-looking text.
 - It only affects outgoing model requests, not stored OpenCode session history.
 - OpenCode's `experimental.chat.messages.transform` hook is experimental, so future OpenCode versions may change the plugin API.
 
