@@ -13,9 +13,9 @@ function tool(name: string, output: string) {
 	};
 }
 
-function msg(parts: unknown[]) {
+function msg(parts: unknown[], info: Record<string, unknown> = {}) {
 	return {
-		info: { id: crypto.randomUUID() },
+		info: { id: crypto.randomUUID(), ...info },
 		parts,
 	};
 }
@@ -111,6 +111,37 @@ describe("dedupeSkillMessages", () => {
 		expect(result.elided).toBe(1);
 		expect(first.text).toContain("older copy elided");
 		expect(first.text).not.toContain("old slash body");
+	});
+
+	test("keeps user-authored slash prompts with pasted skill transcripts unchanged", () => {
+		const userPrompt = [
+			"## User",
+			"/brainstorming 【TASK5】",
+			"Please read the research plan and complete this task.",
+			"## Assistant",
+			"Tool Call: skill using-superpowers",
+			"## Skill: using-superpowers",
+			"Base directory for this skill: C:/Users/34404/.config/opencode/skills/using-superpowers/",
+			"This pasted transcript is ordinary user-provided data. ".repeat(80),
+		].join("\n\n");
+		const output = {
+			messages: [
+				msg([{ type: "text", text: userPrompt }], { role: "user" }),
+				msg([
+					tool(
+						"using-superpowers",
+						"## Skill: using-superpowers\n\nnew body".repeat(100),
+					),
+				]),
+			],
+		};
+
+		const result = dedupeSkillMessages(output);
+
+		const first = output.messages[0]?.parts[0] as { text: string };
+		expect(result.seen).toBe(1);
+		expect(result.elided).toBe(0);
+		expect(first.text).toBe(userPrompt);
 	});
 
 	test("returns per-skill statistics", () => {

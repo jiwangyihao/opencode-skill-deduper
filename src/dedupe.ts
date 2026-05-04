@@ -101,16 +101,19 @@ function extractSkillNameFromPart(part: MutablePart): string | null {
 }
 
 function extractSkillNameFromText(text: string): string | null {
-  const skillContentMatch = text.match(/<skill_content\s+name=["']([^"']+)["']/i)
+  const trimmed = text.trimStart()
+  const skillContentMatch = trimmed.match(
+    /^<skill_content\s+name=["']([^"']+)["']/i,
+  )
   if (skillContentMatch?.[1]?.trim()) return skillContentMatch[1].trim()
 
-  const omoHeadingMatch = text.match(/(?:^|\n)## Skill:\s*([^\r\n]+)/)
+  const omoHeadingMatch = trimmed.match(/^## Skill:\s*([^\r\n]+)/)
   if (omoHeadingMatch?.[1]?.trim()) return omoHeadingMatch[1].trim()
 
-  const nativeHeadingMatch = text.match(/(?:^|\n)# Skill:\s*([^\r\n]+)/)
+  const nativeHeadingMatch = trimmed.match(/^# Skill:\s*([^\r\n]+)/)
   if (nativeHeadingMatch?.[1]?.trim()) return nativeHeadingMatch[1].trim()
 
-  const baseDirectoryMatch = text.match(
+  const baseDirectoryMatch = trimmed.match(
     /Base directory for this skill:\s*[^\r\n]*[\\/]skills[\\/]([^\\/\r\n]+)[\\/]?/i,
   )
   if (baseDirectoryMatch?.[1]?.trim()) return baseDirectoryMatch[1].trim()
@@ -119,12 +122,13 @@ function extractSkillNameFromText(text: string): string | null {
 }
 
 function looksLikeFullSkillText(text: string): boolean {
+  const trimmed = text.trimStart()
   return (
-    text.includes("## Skill:") ||
-    text.includes("# Skill:") ||
-    text.includes("<skill_content") ||
-    text.includes("<skill-instruction>") ||
-    text.includes("Base directory for this skill:")
+    trimmed.startsWith("## Skill:") ||
+    trimmed.startsWith("# Skill:") ||
+    /^<skill_content\b/i.test(trimmed) ||
+    /^<skill-instruction>/i.test(trimmed) ||
+    /^Base directory for this skill:/i.test(trimmed)
   )
 }
 
