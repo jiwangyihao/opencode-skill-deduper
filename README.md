@@ -4,11 +4,11 @@
 [![npm downloads](https://img.shields.io/npm/dw/opencode-skill-deduper.svg)](https://www.npmjs.com/package/opencode-skill-deduper)
 [![License: MPL-2.0](https://img.shields.io/badge/License-MPL--2.0-brightgreen.svg)](LICENSE)
 
-> **Latest in v0.1.2 | v0.1.2 最近更新**
+> **Latest in v0.1.3 | v0.1.3 最近更新**
 >
-> - Moves dedupe statistics off stdout and into OpenCode app log | 将压缩统计从 stdout 迁移到 OpenCode app log
+> - Moves dedupe statistics off OpenCode app log and into a file log | 将压缩统计从 OpenCode app log 迁移到文件日志
 > - Shows a TUI notifier summary without appending session messages | 通过 TUI notifier 显示摘要，且不追加 session 消息
-> - Adds regression coverage for stdout-free app log and notifier behavior | 新增无 stdout、app log 与 notifier 行为回归测试
+> - Avoids terminal/stdout output from both `console.*` and `client.app.log` paths | 避免 `console.*` 和 `client.app.log` 路径产生终端/stdout 输出
 
 [中文](#中文) | [English](#english)
 
@@ -29,7 +29,7 @@
 - **兼容原生 OpenCode** — 支持 `<skill_content name="...">` 形式的 skill 输出
 - **兼容 OmO / Oh My OpenCode** — 支持 `## Skill: ...` 形式的 skill 输出
 - **兼容 slash 注入** — 当 `<skill-instruction>` 内容中包含 skill 路径时，也能识别对应 skill 名
-- **可观察记录** — 真的压缩内容时通过 OpenCode app log 与 TUI notifier 记录压缩次数和节省字符数；不会写入 stdout，也不会追加 session 消息
+- **可观察记录** — 真的压缩内容时写入文件日志并通过 TUI notifier 显示摘要；不会写入 stdout、不会调用 OpenCode app log，也不会追加 session 消息
 
 ---
 
@@ -53,7 +53,7 @@
 2. **执行其中带明确版本号的全局命令**。例如当前版本是：
 
    ```bash
-   opencode plugin opencode-skill-deduper@0.1.2 --force -g
+   opencode plugin opencode-skill-deduper@0.1.3 --force -g
    ```
 
 3. **如果你是刻意只想改当前项目目录下的 `.opencode`**，才使用不带 `-g` 的局部命令；否则默认不要省略 `-g`。
@@ -78,7 +78,7 @@
 2. 直接执行那条命令。默认应使用带 `-g/--global` 的全局命令来更新用户平时实际在用的 OpenCode 实例；如果用户明确只想改当前项目目录下的 `.opencode`，才省略 `-g`。例如当前版本：
 
    ```bash
-   opencode plugin opencode-skill-deduper@0.1.2 --force -g
+   opencode plugin opencode-skill-deduper@0.1.3 --force -g
    ```
 
 3. 不要手动编辑 OpenCode 配置来安装或升级这个插件，也不要使用裸包名或 `latest`。
@@ -93,19 +93,14 @@
 
 ### 验证
 
-加载同一个长 skill 两次后，OpenCode app log 中应出现类似记录：
+加载同一个长 skill 两次后，文件日志中应出现类似记录：
 
-```json
-{
-  "service": "skill-deduper",
-  "level": "info",
-  "message": "elided duplicate skill content",
-  "extra": {
-    "elided": 1,
-    "savedChars": 4099,
-    "skills": [{ "name": "using-superpowers", "elided": 1, "savedChars": 4099 }]
-  }
-}
+```text
+~/.config/opencode/logs/skill-deduper/daily/YYYY-MM-DD.log
+```
+
+```text
+2026-05-05T00:00:00.000Z INFO  skill-deduper: elided duplicate skill content | {"elided":1,"savedChars":4099,"skills":[{"name":"using-superpowers","elided":1,"savedChars":4099}]}
 ```
 
 同时，TUI notifier 会显示一条不进入 session 消息历史的通知，文本类似：
@@ -173,7 +168,7 @@ It only runs in OpenCode's `experimental.chat.messages.transform` phase. It does
 - **Native OpenCode support** — recognizes `<skill_content name="...">` skill output
 - **OmO / Oh My OpenCode support** — recognizes `## Skill: ...` skill output
 - **Slash-injected support** — recognizes `<skill-instruction>` blocks when the skill path exposes the skill name
-- **Observable records** — records elided duplicate counts and saved characters through OpenCode app log and the TUI notifier without writing to stdout or appending session messages
+- **Observable records** — writes elided duplicate counts and saved characters to a file log and shows a TUI notifier summary without using stdout, OpenCode app log, or appended session messages
 
 ---
 
@@ -197,7 +192,7 @@ First read the latest GitHub Release for opencode-skill-deduper and execute the 
 2. **Run the exact versioned global command** from that section. For the current version, the command is:
 
    ```bash
-   opencode plugin opencode-skill-deduper@0.1.2 --force -g
+   opencode plugin opencode-skill-deduper@0.1.3 --force -g
    ```
 
 3. **Only omit `-g` if you intentionally want to update the current project's `.opencode` instead of the global OpenCode config.**
@@ -222,7 +217,7 @@ First read the latest GitHub Release for opencode-skill-deduper and execute the 
 2. Execute that command directly. By default, use the global command with `-g/--global`; only omit `-g` if you intentionally want to update the current project's `.opencode`. For the current version:
 
    ```bash
-   opencode plugin opencode-skill-deduper@0.1.2 --force -g
+   opencode plugin opencode-skill-deduper@0.1.3 --force -g
    ```
 
 3. Do not install or upgrade this plugin by hand-editing the OpenCode config, and do not use a bare package name or `latest`.
@@ -237,19 +232,14 @@ First read the latest GitHub Release for opencode-skill-deduper and execute the 
 
 ### Verification
 
-After loading the same long skill twice, OpenCode app log should include a record similar to:
+After loading the same long skill twice, the file log should include a record similar to:
 
-```json
-{
-  "service": "skill-deduper",
-  "level": "info",
-  "message": "elided duplicate skill content",
-  "extra": {
-    "elided": 1,
-    "savedChars": 4099,
-    "skills": [{ "name": "using-superpowers", "elided": 1, "savedChars": 4099 }]
-  }
-}
+```text
+~/.config/opencode/logs/skill-deduper/daily/YYYY-MM-DD.log
+```
+
+```text
+2026-05-05T00:00:00.000Z INFO  skill-deduper: elided duplicate skill content | {"elided":1,"savedChars":4099,"skills":[{"name":"using-superpowers","elided":1,"savedChars":4099}]}
 ```
 
 The TUI notifier also shows a notification that does not enter session message history, similar to:
