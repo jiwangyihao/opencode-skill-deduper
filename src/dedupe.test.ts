@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -6,8 +6,9 @@ import { describe, expect, test, vi } from "vitest";
 import { dedupeSkillMessages } from "./dedupe";
 import { SkillDeduperPlugin } from "./index";
 
-function tool(name: string, output: string) {
+function tool(name: string, output: string, id: string = crypto.randomUUID()) {
 	return {
+		id,
 		type: "tool",
 		tool: "skill",
 		state: {
@@ -265,5 +266,81 @@ describe("dedupeSkillMessages", () => {
 			},
 		});
 		expect(sessionPrompt).not.toHaveBeenCalled();
+	});
+
+	test("does not repeat file logs or notifications for previously elided skill parts", async () => {
+		const showToast = vi.fn();
+		const logDir = await mkdtemp(join(tmpdir(), "skill-deduper-repeat-test-"));
+		const previousLogDir = process.env.SKILL_DEDUPER_LOG_DIR;
+		process.env.SKILL_DEDUPER_LOG_DIR = logDir;
+		const hooks = await SkillDeduperPlugin({
+			client: { tui: { showToast } },
+		} as never);
+		const reloadedHooks = await SkillDeduperPlugin({
+			client: { tui: { showToast } },
+		} as never);
+
+		const makeOutput = () => ({
+			messages: [
+				msg([
+					tool(
+						"brainstorming",
+						"## Skill: brainstorming\n\nold".repeat(100),
+						"part_same_old_skill",
+					),
+				]),
+				msg([
+					tool(
+						"brainstorming",
+						"## Skill: brainstorming\n\nnew".repeat(100),
+						"part_same_new_skill",
+					),
+				]),
+			],
+		});
+
+		try {
+			const firstOutput = makeOutput();
+			const secondOutput = makeOutput();
+
+			await Promise.all([
+				reloadedHooks["experimental.chat.messages.transform"]?.(
+					{} as never,
+					firstOutput as never,
+				),
+				hooks["experimental.chat.messages.transform"]?.(
+					{} as never,
+					secondOutput as never,
+				),
+			]);
+
+			expect(showToast).toHaveBeenCalledOnce();
+			expect(
+				(firstOutput.messages[0]?.parts[0] as ReturnType<typeof tool>).state
+					.output,
+			).toContain("older copy elided");
+			expect(
+				(secondOutput.messages[0]?.parts[0] as ReturnType<typeof tool>).state
+					.output,
+			).toContain("older copy elided");
+			expect(
+				(firstOutput.messages[1]?.parts[0] as ReturnType<typeof tool>).state
+					.output,
+			).toContain("new");
+
+			const logText = await readFile(
+				join(logDir, "daily", `${new Date().toISOString().split("T")[0]}.log`),
+				"utf8",
+			);
+			expect(logText.match(/skill-deduper: elided duplicate skill content/g)).toHaveLength(1);
+			await expect(readdir(join(logDir, "notified-elisions"))).resolves.toHaveLength(1);
+		} finally {
+			if (previousLogDir === undefined) {
+				delete process.env.SKILL_DEDUPER_LOG_DIR;
+			} else {
+				process.env.SKILL_DEDUPER_LOG_DIR = previousLogDir;
+			}
+			await rm(logDir, { force: true, recursive: true });
+		}
 	});
 });

@@ -1,8 +1,10 @@
 import type { Plugin } from "@opencode-ai/plugin";
 
 import {
+	claimNewElisionIds,
 	createDedupeNotificationMessage,
 	dedupeSkillMessages,
+	filterDedupeResultElisions,
 	logDedupeStatsToFile,
 } from "./dedupe.js";
 
@@ -13,10 +15,21 @@ export const SkillDeduperPlugin: Plugin = async (ctx) => {
 	return {
 		"experimental.chat.messages.transform": async (_input, output) => {
 			const result = dedupeSkillMessages(output);
-			const notificationMessage = createDedupeNotificationMessage(result);
+			let newElisionResult = result;
 
 			try {
-				await logDedupeStatsToFile(result);
+				const claimedElisionIds = await claimNewElisionIds(result.elisions);
+				newElisionResult = filterDedupeResultElisions(result, (elision) =>
+					claimedElisionIds.has(elision.id),
+				);
+			} catch {
+				newElisionResult = filterDedupeResultElisions(result, () => false);
+			}
+
+			const notificationMessage = createDedupeNotificationMessage(newElisionResult);
+
+			try {
+				await logDedupeStatsToFile(newElisionResult);
 			} catch {
 				// Recording must never affect message transformation.
 			}
