@@ -165,9 +165,12 @@ describe("dedupeSkillMessages", () => {
 		]);
 	});
 
-	test("logs statistics from the plugin hook", async () => {
+	test("records statistics from the plugin hook without stdout", async () => {
 		const info = vi.spyOn(console, "info").mockImplementation(() => undefined);
-		const hooks = await SkillDeduperPlugin({} as never);
+		const appLog = vi.fn();
+		const hooks = await SkillDeduperPlugin({
+			client: { app: { log: appLog } },
+		} as never);
 		const output = {
 			messages: [
 				msg([
@@ -184,9 +187,76 @@ describe("dedupeSkillMessages", () => {
 			output as never,
 		);
 
-		expect(info.mock.calls.join("\n")).toContain("skill-deduper");
-		expect(info.mock.calls.join("\n")).toContain("brainstorming");
-		expect(info.mock.calls.join("\n")).toContain("savedChars");
+		expect(info).not.toHaveBeenCalled();
+		expect(appLog).toHaveBeenCalledOnce();
+		expect(appLog).toHaveBeenCalledWith({
+			body: {
+				service: "skill-deduper",
+				level: "info",
+				message: "elided duplicate skill content",
+				extra: {
+					elided: 1,
+					savedChars: expect.any(Number),
+					skills: [
+						expect.objectContaining({
+							name: "brainstorming",
+							elided: 1,
+						}),
+					],
+				},
+			},
+		});
 		info.mockRestore();
+	});
+
+	test("shows a TUI notification without writing a session message", async () => {
+		const appLog = vi.fn();
+		const showToast = vi.fn();
+		const sessionPrompt = vi.fn();
+		const hooks = await SkillDeduperPlugin({
+			client: {
+				app: { log: appLog },
+				tui: { showToast },
+				session: { prompt: sessionPrompt },
+			},
+		} as never);
+		const output = {
+			messages: [
+				msg(
+					[
+						tool(
+							"brainstorming",
+							"## Skill: brainstorming\n\nold".repeat(100),
+						),
+					],
+					{ sessionID: "ses_skill_deduper" },
+				),
+				msg(
+					[
+						tool(
+							"brainstorming",
+							"## Skill: brainstorming\n\nnew".repeat(100),
+						),
+					],
+					{ sessionID: "ses_skill_deduper" },
+				),
+			],
+		};
+
+		await hooks["experimental.chat.messages.transform"]?.(
+			{} as never,
+			output as never,
+		);
+
+		expect(showToast).toHaveBeenCalledOnce();
+		expect(showToast).toHaveBeenCalledWith({
+			body: {
+				title: "Skill Deduper",
+				message: expect.stringContaining("brainstorming"),
+				variant: "info",
+				duration: 5000,
+			},
+		});
+		expect(sessionPrompt).not.toHaveBeenCalled();
 	});
 });

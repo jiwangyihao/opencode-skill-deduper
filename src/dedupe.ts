@@ -35,6 +35,21 @@ export type SkillDedupeResult = {
   skills: SkillElideStat[]
 }
 
+export type SkillDedupeLogRecord = {
+  service: "skill-deduper"
+  level: "info"
+  message: "elided duplicate skill content"
+  extra: {
+    elided: number
+    savedChars: number
+    skills: SkillElideStat[]
+  }
+}
+
+export type SkillDedupeRecorder = (
+  record: SkillDedupeLogRecord,
+) => void | Promise<void>
+
 const MIN_ELIDE_CHARS = 1024
 
 function getNestedRecord(value: unknown): Record<string, unknown> | null {
@@ -211,15 +226,58 @@ export function dedupeSkillMessages(output: MessagesTransformOutput): SkillDedup
   }
 }
 
-export function logDedupeStats(result: SkillDedupeResult): void {
-  if (result.elided === 0) return
+export function createDedupeLogRecord(
+  result: SkillDedupeResult,
+): SkillDedupeLogRecord | null {
+  if (result.elided === 0) return null
 
-  console.info(
-    "[skill-deduper] elided duplicate skill content",
-    JSON.stringify({
+  return {
+    service: "skill-deduper",
+    level: "info",
+    message: "elided duplicate skill content",
+    extra: {
       elided: result.elided,
       savedChars: result.savedChars,
       skills: result.skills,
-    }),
+    },
+  }
+}
+
+export function createDedupeNotificationMessage(
+  result: SkillDedupeResult,
+): string | null {
+  if (result.elided === 0) return null
+
+  const skillLines = result.skills.map(
+    (skill) =>
+      `- ${skill.name}: ${skill.elided} elided, ${skill.savedChars} chars saved`,
   )
+
+  return [
+    "[skill-deduper] Elided duplicate skill content before this request.",
+    "",
+    `Elided blocks: ${result.elided}`,
+    `Saved characters: ${result.savedChars}`,
+    "Skills:",
+    ...skillLines,
+  ].join("\n")
+}
+
+export async function recordDedupeStats(
+  result: SkillDedupeResult,
+  recorder: SkillDedupeRecorder,
+): Promise<void> {
+  const record = createDedupeLogRecord(result)
+  if (!record) return
+
+  await recorder(record)
+}
+
+export function logDedupeStats(
+  result: SkillDedupeResult,
+  recorder?: SkillDedupeRecorder,
+): void | Promise<void> {
+  if (!recorder) return
+
+  return recordDedupeStats(result, recorder)
 }
