@@ -4,11 +4,11 @@
 [![npm downloads](https://img.shields.io/npm/dw/opencode-skill-deduper.svg)](https://www.npmjs.com/package/opencode-skill-deduper)
 [![License: MPL-2.0](https://img.shields.io/badge/License-MPL--2.0-brightgreen.svg)](LICENSE)
 
-> **Latest in v0.1.3 | v0.1.3 最近更新**
+> **Latest in v0.1.4 | v0.1.4 最近更新**
 >
-> - Moves dedupe statistics off OpenCode app log and into a file log | 将压缩统计从 OpenCode app log 迁移到文件日志
-> - Shows a TUI notifier summary without appending session messages | 通过 TUI notifier 显示摘要，且不追加 session 消息
-> - Avoids terminal/stdout output from both `console.*` and `client.app.log` paths | 避免 `console.*` 和 `client.app.log` 路径产生终端/stdout 输出
+> - Atomically records notified elisions so the same skill block is only logged and toasted once across plugin reloads or concurrent plugin instances | 原子记录已提示的压缩记录，插件重载或并发插件实例下同一个 skill 块也只记录和提示一次
+> - Keeps file logs and TUI notifier quiet unless a newly elided skill part appears | 只有出现新的已压缩 skill 片段时才写文件日志并显示 TUI notifier
+> - Continues avoiding terminal/stdout output from `console.*`, `client.app.log`, and session-message paths | 继续避免 `console.*`、`client.app.log` 和 session 消息路径产生终端/stdout 输出
 
 [中文](#中文) | [English](#english)
 
@@ -53,7 +53,7 @@
 2. **执行其中带明确版本号的全局命令**。例如当前版本是：
 
    ```bash
-   opencode plugin opencode-skill-deduper@0.1.3 --force -g
+   opencode plugin opencode-skill-deduper@0.1.4 --force -g
    ```
 
 3. **如果你是刻意只想改当前项目目录下的 `.opencode`**，才使用不带 `-g` 的局部命令；否则默认不要省略 `-g`。
@@ -78,7 +78,7 @@
 2. 直接执行那条命令。默认应使用带 `-g/--global` 的全局命令来更新用户平时实际在用的 OpenCode 实例；如果用户明确只想改当前项目目录下的 `.opencode`，才省略 `-g`。例如当前版本：
 
    ```bash
-   opencode plugin opencode-skill-deduper@0.1.3 --force -g
+   opencode plugin opencode-skill-deduper@0.1.4 --force -g
    ```
 
 3. 不要手动编辑 OpenCode 配置来安装或升级这个插件，也不要使用裸包名或 `latest`。
@@ -192,7 +192,7 @@ First read the latest GitHub Release for opencode-skill-deduper and execute the 
 2. **Run the exact versioned global command** from that section. For the current version, the command is:
 
    ```bash
-   opencode plugin opencode-skill-deduper@0.1.3 --force -g
+   opencode plugin opencode-skill-deduper@0.1.4 --force -g
    ```
 
 3. **Only omit `-g` if you intentionally want to update the current project's `.opencode` instead of the global OpenCode config.**
@@ -217,7 +217,7 @@ First read the latest GitHub Release for opencode-skill-deduper and execute the 
 2. Execute that command directly. By default, use the global command with `-g/--global`; only omit `-g` if you intentionally want to update the current project's `.opencode`. For the current version:
 
    ```bash
-   opencode plugin opencode-skill-deduper@0.1.3 --force -g
+   opencode plugin opencode-skill-deduper@0.1.4 --force -g
    ```
 
 3. Do not install or upgrade this plugin by hand-editing the OpenCode config, and do not use a bare package name or `latest`.
