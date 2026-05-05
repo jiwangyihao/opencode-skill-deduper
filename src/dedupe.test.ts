@@ -1,3 +1,7 @@
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
 import { describe, expect, test, vi } from "vitest";
 import { dedupeSkillMessages } from "./dedupe";
 import { SkillDeduperPlugin } from "./index";
@@ -165,9 +169,13 @@ describe("dedupeSkillMessages", () => {
 		]);
 	});
 
-	test("records statistics from the plugin hook without stdout", async () => {
+	test("records statistics to a file without app log or stdout", async () => {
 		const info = vi.spyOn(console, "info").mockImplementation(() => undefined);
 		const appLog = vi.fn();
+		const logDir = await mkdtemp(join(tmpdir(), "skill-deduper-test-"));
+		const previousLogDir = process.env.SKILL_DEDUPER_LOG_DIR;
+		process.env.SKILL_DEDUPER_LOG_DIR = logDir;
+
 		const hooks = await SkillDeduperPlugin({
 			client: { app: { log: appLog } },
 		} as never);
@@ -187,26 +195,25 @@ describe("dedupeSkillMessages", () => {
 			output as never,
 		);
 
-		expect(info).not.toHaveBeenCalled();
-		expect(appLog).toHaveBeenCalledOnce();
-		expect(appLog).toHaveBeenCalledWith({
-			body: {
-				service: "skill-deduper",
-				level: "info",
-				message: "elided duplicate skill content",
-				extra: {
-					elided: 1,
-					savedChars: expect.any(Number),
-					skills: [
-						expect.objectContaining({
-							name: "brainstorming",
-							elided: 1,
-						}),
-					],
-				},
-			},
-		});
-		info.mockRestore();
+		try {
+			expect(info).not.toHaveBeenCalled();
+			expect(appLog).not.toHaveBeenCalled();
+
+			const logText = await readFile(
+				join(logDir, "daily", `${new Date().toISOString().split("T")[0]}.log`),
+				"utf8",
+			);
+			expect(logText).toContain("skill-deduper: elided duplicate skill content");
+			expect(logText).toContain("brainstorming");
+		} finally {
+			if (previousLogDir === undefined) {
+				delete process.env.SKILL_DEDUPER_LOG_DIR;
+			} else {
+				process.env.SKILL_DEDUPER_LOG_DIR = previousLogDir;
+			}
+			await rm(logDir, { force: true, recursive: true });
+			info.mockRestore();
+		}
 	});
 
 	test("shows a TUI notification without writing a session message", async () => {

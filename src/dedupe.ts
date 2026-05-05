@@ -1,3 +1,7 @@
+import { mkdir, writeFile } from "node:fs/promises"
+import { homedir } from "node:os"
+import { join } from "node:path"
+
 type MutablePart = Record<string, unknown>
 
 type MessageWithParts = {
@@ -51,6 +55,19 @@ export type SkillDedupeRecorder = (
 ) => void | Promise<void>
 
 const MIN_ELIDE_CHARS = 1024
+
+function getDedupeLogDir(): string {
+  const configured = process.env.SKILL_DEDUPER_LOG_DIR?.trim()
+  if (configured) return configured
+
+  const configHome = process.env.XDG_CONFIG_HOME?.trim() || join(homedir(), ".config")
+  return join(configHome, "opencode", "logs", "skill-deduper")
+}
+
+function formatDedupeLogRecord(record: SkillDedupeLogRecord): string {
+  const timestamp = new Date().toISOString()
+  return `${timestamp} ${record.level.toUpperCase().padEnd(5)} skill-deduper: ${record.message} | ${JSON.stringify(record.extra)}\n`
+}
 
 function getNestedRecord(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== "object") return null
@@ -271,6 +288,22 @@ export async function recordDedupeStats(
   if (!record) return
 
   await recorder(record)
+}
+
+export async function writeDedupeLogRecord(
+  record: SkillDedupeLogRecord,
+  logDir = getDedupeLogDir(),
+): Promise<void> {
+  const dailyLogDir = join(logDir, "daily")
+  await mkdir(dailyLogDir, { recursive: true })
+  const logFile = join(dailyLogDir, `${new Date().toISOString().split("T")[0]}.log`)
+  await writeFile(logFile, formatDedupeLogRecord(record), { flag: "a" })
+}
+
+export async function logDedupeStatsToFile(
+  result: SkillDedupeResult,
+): Promise<void> {
+  await recordDedupeStats(result, writeDedupeLogRecord)
 }
 
 export function logDedupeStats(

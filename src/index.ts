@@ -3,7 +3,7 @@ import type { Plugin } from "@opencode-ai/plugin";
 import {
 	createDedupeNotificationMessage,
 	dedupeSkillMessages,
-	logDedupeStats,
+	logDedupeStatsToFile,
 } from "./dedupe.js";
 
 export type { SkillDedupeResult, SkillElideStat } from "./dedupe.js";
@@ -16,9 +16,7 @@ export const SkillDeduperPlugin: Plugin = async (ctx) => {
 			const notificationMessage = createDedupeNotificationMessage(result);
 
 			try {
-				await logDedupeStats(result, async (record) => {
-					await ctx.client.app.log({ body: record });
-				});
+				await logDedupeStatsToFile(result);
 			} catch {
 				// Recording must never affect message transformation.
 			}
