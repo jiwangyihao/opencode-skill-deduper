@@ -1,8 +1,11 @@
-# OpenCode Skill Deduper
+# opencode-skill-deduper
 
 [![npm version](https://img.shields.io/npm/v/opencode-skill-deduper.svg)](https://www.npmjs.com/package/opencode-skill-deduper)
 [![npm downloads](https://img.shields.io/npm/dw/opencode-skill-deduper.svg)](https://www.npmjs.com/package/opencode-skill-deduper)
 [![License: MPL-2.0](https://img.shields.io/badge/License-MPL--2.0-brightgreen.svg)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/jiwangyihao/opencode-skill-deduper?style=social)](https://github.com/jiwangyihao/opencode-skill-deduper/stargazers)
+
+套件导航 / Suite: [OpenCode J Super Suite](https://github.com/jiwangyihao/opencode-j-super-suite)
 
 > **Latest in v0.1.4 | v0.1.4 最近更新**
 >
@@ -122,7 +125,21 @@ Skills:
 
 ## 使用方式
 
-安装后无需额外命令。插件会在 OpenCode 发起模型请求前检查消息内容：
+安装后无需额外命令。默认入口导出 OpenCode 插件函数：
+
+```typescript
+import SkillDeduperPlugin from "opencode-skill-deduper"
+
+export default SkillDeduperPlugin
+```
+
+如果需要在测试或自定义流程中复用去重逻辑，可以导入 `dedupeSkillMessages`：
+
+```typescript
+import { dedupeSkillMessages } from "opencode-skill-deduper/dedupe"
+```
+
+插件会在 OpenCode 发起模型请求前检查消息内容：
 
 ```text
 Message 1: full using-superpowers skill content
@@ -143,6 +160,17 @@ Message 2: full using-superpowers skill content
 - 经常在同一个 OpenCode 会话里重复加载 Superpowers、OmO skills 或其他长 skill 的用户
 - 经常使用 slash command、原生 `skill` 工具或多代理工作流的用户
 - 希望减少重复 skill 正文挤占上下文窗口的用户
+
+## 本地开发
+
+```bash
+npm install
+npm test
+npm run typecheck
+npm run build
+```
+
+更多设计与实现记录见 `docs/superpowers/`。
 
 ## 注意事项
 
@@ -261,7 +289,21 @@ Skills:
 
 ## Usage
 
-No extra command is required after installation. The plugin checks outgoing OpenCode model requests:
+No extra command is required after installation. The default export is the OpenCode plugin function:
+
+```typescript
+import SkillDeduperPlugin from "opencode-skill-deduper"
+
+export default SkillDeduperPlugin
+```
+
+For tests or custom flows, import `dedupeSkillMessages` from the dedicated subpath:
+
+```typescript
+import { dedupeSkillMessages } from "opencode-skill-deduper/dedupe"
+```
+
+The plugin checks outgoing OpenCode model requests:
 
 ```text
 Message 1: full using-superpowers skill content
@@ -282,6 +324,17 @@ The newest copy remains intact, so the model still receives the current skill in
 - Users who repeatedly load Superpowers, OmO skills, or other long skills in one OpenCode session
 - Users who rely on slash commands, native `skill` calls, or multi-agent workflows
 - Users who want to reduce duplicated skill text in the request context
+
+## Local Development
+
+```bash
+npm install
+npm test
+npm run typecheck
+npm run build
+```
+
+Design and implementation notes live under `docs/superpowers/`.
 
 ## Notes
 
